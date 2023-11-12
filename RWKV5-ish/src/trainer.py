@@ -26,6 +26,8 @@ class train_callback(pl.Callback):
     def __init__(self, args):
         super().__init__()
         self.args = args
+        self.monitor_interval = 10
+        self.batch_count = 0
 
     def on_train_batch_start(self, trainer, pl_module, batch, batch_idx):
         args = self.args
@@ -114,6 +116,7 @@ class train_callback(pl.Callback):
                     trainer.my_wandb = wandb
 
     def on_train_batch_end(self, trainer, pl_module, outputs, batch, batch_idx):
+
         args = self.args
         token_per_step = args.ctx_len * args.real_bsz
         real_step = trainer.global_step + args.epoch_begin * args.epoch_steps
@@ -154,7 +157,14 @@ class train_callback(pl.Callback):
                         to_save_dict,
                         f"{args.proj_dir}/rwkv-final.pth",
                     )
+
+        if self.batch_count % self.monitor_interval == 0:
+            self.monitor_rocm()          
                 
+    def monitor_rocm(self):
+        # Replace this with the actual command to run rocm-smi
+        result = subprocess.run(['rocm-smi'], capture_output=True, text=True)
+        print(result.stdout)
 
     def on_train_epoch_start(self, trainer, pl_module):
         args = self.args
