@@ -7,6 +7,7 @@ import torch
 # torch._C._jit_set_profiling_executor(True)
 # torch._C._jit_set_profiling_mode(True)
 import torch.nn as nn
+from lion_pytorch import Lion
 from torch.nn import functional as F
 import pytorch_lightning as pl
 from pytorch_lightning.utilities import rank_zero_info, rank_zero_only
@@ -418,11 +419,13 @@ class RWKV(pl.LightningModule):
             optim_groups += [{"params": [param_dict[n] for n in lr_decay], "weight_decay": args.weight_decay, "my_lr_scale": 1.0}]
             if self.deepspeed_offload:
                 return DeepSpeedCPUAdam(optim_groups, lr=self.args.lr_init, betas=self.args.betas, eps=self.args.adam_eps, bias_correction=True, adamw_mode=True, amsgrad=False)
-            return FusedAdam(optim_groups, lr=self.args.lr_init, betas=self.args.betas, eps=self.args.adam_eps, bias_correction=True, adam_w_mode=True, amsgrad=False)
+            return Lion(optim_groups, lr=self.args.lr_init, betas=self.args.betas, use_triton=True)
+            #return FusedAdam(optim_groups, lr=self.args.lr_init, betas=self.args.betas, eps=self.args.adam_eps, bias_correction=True, adam_w_mode=True, amsgrad=False)
         else:
             if self.deepspeed_offload:
                 return DeepSpeedCPUAdam(optim_groups, lr=self.args.lr_init, betas=self.args.betas, eps=self.args.adam_eps, bias_correction=True, adamw_mode=False, weight_decay=0, amsgrad=False)
-            return FusedAdam(optim_groups, lr=self.args.lr_init, betas=self.args.betas, eps=self.args.adam_eps, bias_correction=True, adam_w_mode=False, weight_decay=0, amsgrad=False)
+            return Lion(optim_groups, lr=self.args.lr_init, betas=self.args.betas, weight_decay=0, use_triton=True) 
+            #return FusedAdam(optim_groups, lr=self.args.lr_init, betas=self.args.betas, eps=self.args.adam_eps, bias_correction=True, adam_w_mode=False, weight_decay=0, amsgrad=False)
         # return ZeroOneAdam(optim_groups, lr=self.args.lr_init, betas=self.args.betas, eps=self.args.adam_eps, bias_correction=True, weight_decay=0, amsgrad=False, cuda_aware=False)
 
     @property
